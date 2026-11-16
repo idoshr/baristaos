@@ -16,8 +16,8 @@ import sys
 # Allow `python scripts/hil_checklist.py` from a checkout without install.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from smart_espresso.sim.machine import SimulatedMachine  # noqa: E402
-from smart_espresso.sim.session import build_sim_app, drive, virtual_clock  # noqa: E402
+from baristaos.sim.machine import SimulatedMachine  # noqa: E402
+from baristaos.sim.session import build_sim_app, drive, virtual_clock  # noqa: E402
 
 
 def _report(rows, note):

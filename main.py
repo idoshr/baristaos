@@ -2,23 +2,21 @@ import argparse
 import os
 from contextlib import contextmanager
 
-from smart_espresso.analog_sensor.analog_sensor import MedianFilterADC
-from smart_espresso.analog_sensor.pressure_analog_sensor import (
+from baristaos.analog_sensor.analog_sensor import MedianFilterADC
+from baristaos.analog_sensor.pressure_analog_sensor import (
     PressureAnalogSensor,
     pressure_voltages_from_env,
 )
-from smart_espresso.analog_sensor.water_flow_sensor import WaterFlowAnalogSensor
-from smart_espresso.machine_profile import (
-    DEFAULT_STATE_PATH as DEFAULT_MACHINE_PROFILE_PATH,
-)
-from smart_espresso.machine_profile import MachineProfileStore
-from smart_espresso.machine_state import MachineStateClassifier
-from smart_espresso.shot_history import DEFAULT_STATE_PATH as DEFAULT_SHOT_HISTORY_PATH
-from smart_espresso.shot_history import ShotHistory
-from smart_espresso.smart_espresso import SmartEspresso
-from smart_espresso.utils import strtobool
-from smart_espresso.water_tank import DEFAULT_STATE_PATH, WaterTank
-from smart_espresso.web.status_server import StatusServer
+from baristaos.analog_sensor.water_flow_sensor import WaterFlowAnalogSensor
+from baristaos.app import BaristaOS
+from baristaos.machine_profile import DEFAULT_STATE_PATH as DEFAULT_MACHINE_PROFILE_PATH
+from baristaos.machine_profile import MachineProfileStore
+from baristaos.machine_state import MachineStateClassifier
+from baristaos.shot_history import DEFAULT_STATE_PATH as DEFAULT_SHOT_HISTORY_PATH
+from baristaos.shot_history import ShotHistory
+from baristaos.utils import strtobool
+from baristaos.water_tank import DEFAULT_STATE_PATH, WaterTank
+from baristaos.web.status_server import StatusServer
 
 
 def build_home_assistant_client(environ=None):
@@ -36,7 +34,7 @@ def build_home_assistant_client(environ=None):
     if not url or not token:
         raise ValueError("HA_URL and HA_TOKEN are required")
     verify = strtobool(env.get("HA_VERIFY_SSL") or True)
-    from smart_espresso.home_assistant import DEFAULT_TIMEOUT, Client
+    from baristaos.home_assistant import DEFAULT_TIMEOUT, Client
 
     print("Connecting to Home Assistant")
     return Client(f"{url}/api", token, verify_ssl=verify, timeout=DEFAULT_TIMEOUT)
@@ -65,7 +63,7 @@ def build_display(enabled=None, factory=None, sim=None):
     if not enabled:
         return None
     if sim and factory is None:
-        from smart_espresso.sim.sensors import SimOLED
+        from baristaos.sim.sensors import SimOLED
 
         return SimOLED()
     if factory is None:
@@ -140,8 +138,8 @@ def build_digital_sensors(enabled=None, pin=None, factory=None, sim=None):
     if not enabled:
         return []
     if sim and factory is None:
-        from smart_espresso.sim.machine import SimulatedMachine
-        from smart_espresso.sim.sensors import SimDHT
+        from baristaos.sim.machine import SimulatedMachine
+        from baristaos.sim.sensors import SimDHT
 
         seed = int(os.environ.get("SIM_SEED") or 59)
         return [SimDHT(SimulatedMachine(seed=seed), name="Environment")]
@@ -150,7 +148,7 @@ def build_digital_sensors(enabled=None, pin=None, factory=None, sim=None):
     try:
         if factory is not None:
             return [factory()]
-        from smart_espresso.analog_sensor.dht22_sensor import DHT22Sensor
+        from baristaos.analog_sensor.dht22_sensor import DHT22Sensor
 
         return [DHT22Sensor(pin=pin, name="Environment")]
     except Exception as error:
@@ -173,17 +171,19 @@ def _default_adc(adc_type, pin, gain):
     if str(adc_type).upper() == "SIM":
         raise ValueError("SIM mode is built in build_analog_devices, not per pin")
     if adc_type == "ADS1115":
-        from smart_espresso.analog_sensor.ads1115_analog_sensor import ADS1115ADC
+        from baristaos.analog_sensor.ads1115_analog_sensor import ADS1115ADC
 
         return ADS1115ADC(pin=pin, gain=gain)
-    from smart_espresso.analog_sensor.mcp3008_analog_sensor import MCP3008ADC
+    from baristaos.analog_sensor.mcp3008_analog_sensor import MCP3008ADC
 
     return MCP3008ADC(pin=pin)
 
 
 def _pressure_offset_path(name: str) -> str:
-    directory = os.environ.get("PRESSURE_OFFSET_DIR", "~/.smart_espresso")
-    return os.path.join(os.path.expanduser(directory), f"pressure_{name.lower()}.json")
+    from baristaos.state_home import expand_state_path
+
+    directory = os.environ.get("PRESSURE_OFFSET_DIR", "~/.baristaos")
+    return os.path.join(expand_state_path(directory), f"pressure_{name.lower()}.json")
 
 
 def build_analog_devices(adc_type=None, flow_sample_interval=_UNSET, adc_builder=None):
@@ -198,8 +198,8 @@ def build_analog_devices(adc_type=None, flow_sample_interval=_UNSET, adc_builder
         adc_type = os.environ.get("ADC_TYPE", "ADS1115")
     interval = _flow_sample_interval(flow_sample_interval)
     if _sim_requested(adc_type) and adc_builder is None:
-        from smart_espresso.sim.machine import SimulatedMachine
-        from smart_espresso.sim.session import build_sim_sensors
+        from baristaos.sim.machine import SimulatedMachine
+        from baristaos.sim.session import build_sim_sensors
 
         seed = int(os.environ.get("SIM_SEED") or 59)
         return build_sim_sensors(
@@ -285,9 +285,9 @@ def build_from_env(environ=None, sim=None, recorder=None):
             os.environ["ADC_TYPE"] = "SIM"
         ha = build_home_assistant_client()
         if sim:
-            from smart_espresso.sim.machine import SimulatedMachine
-            from smart_espresso.sim.sensors import SimDHT
-            from smart_espresso.sim.session import build_sim_sensors
+            from baristaos.sim.machine import SimulatedMachine
+            from baristaos.sim.sensors import SimDHT
+            from baristaos.sim.session import build_sim_sensors
 
             seed = int(os.environ.get("SIM_SEED") or 59)
             machine = SimulatedMachine(seed=seed, loop=True)
@@ -301,14 +301,14 @@ def build_from_env(environ=None, sim=None, recorder=None):
             serve = None
             if _web_enabled():
                 shot_path = os.environ.get(
-                    "SHOT_HISTORY_STATE", "~/.smart_espresso/sim_shot_history.json"
+                    "SHOT_HISTORY_STATE", "~/.baristaos/sim_shot_history.json"
                 )
                 tank_path = os.environ.get(
-                    "WATER_TANK_STATE", "~/.smart_espresso/sim_water_tank.json"
+                    "WATER_TANK_STATE", "~/.baristaos/sim_water_tank.json"
                 )
                 profile_path = os.environ.get(
                     "MACHINE_PROFILE_STATE",
-                    "~/.smart_espresso/sim_machine_profile.json",
+                    "~/.baristaos/sim_machine_profile.json",
                 )
                 profiles = MachineProfileStore(
                     state_path=profile_path,
@@ -335,7 +335,7 @@ def build_from_env(environ=None, sim=None, recorder=None):
 
 
 def parse_args(argv=None):
-    parser = argparse.ArgumentParser(description="Smart espresso monitor")
+    parser = argparse.ArgumentParser(description="BaristaOS monitor")
     parser.add_argument(
         "--sim",
         action="store_true",
@@ -361,11 +361,14 @@ def parse_args(argv=None):
 
 
 def main(argv=None):
+    from baristaos.state_home import state_dir
+
+    state_dir()
     args = parse_args(argv)
     if args.seed is not None:
         os.environ["SIM_SEED"] = str(args.seed)
     if args.replay:
-        from smart_espresso.sim.session import collapsed, replay_recording
+        from baristaos.sim.session import collapsed, replay_recording
 
         app, states = replay_recording(args.replay)
         shots = app.web_server.shot_history.list_payload()
@@ -377,7 +380,7 @@ def main(argv=None):
     sim = args.sim or _sim_requested()
     recorder = None
     if args.record:
-        from smart_espresso.sim.adc import CsvRecorder
+        from baristaos.sim.adc import CsvRecorder
 
         recorder = CsvRecorder(args.record)
     try:
@@ -390,15 +393,15 @@ def main(argv=None):
             # run. Sim uses its own files so it does not clobber the Pi's.
             if sim:
                 tank_path = os.environ.get(
-                    "WATER_TANK_STATE", "~/.smart_espresso/sim_water_tank.json"
+                    "WATER_TANK_STATE", "~/.baristaos/sim_water_tank.json"
                 )
                 shot_path = os.environ.get(
                     "SHOT_HISTORY_STATE",
-                    "~/.smart_espresso/sim_shot_history.json",
+                    "~/.baristaos/sim_shot_history.json",
                 )
                 profile_path = os.environ.get(
                     "MACHINE_PROFILE_STATE",
-                    "~/.smart_espresso/sim_machine_profile.json",
+                    "~/.baristaos/sim_machine_profile.json",
                 )
             else:
                 tank_path = os.environ.get("WATER_TANK_STATE", DEFAULT_STATE_PATH)
@@ -430,7 +433,7 @@ def main(argv=None):
             tank = serve.tank
             history = serve.shot_history
             classifier = serve.classifier
-        se = SmartEspresso(
+        se = BaristaOS(
             analog_devices=devices,
             digital_sensors=digital,
             client_ha=ha,

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example: Using DHT22 Temperature and Humidity Sensor with Smart Espresso System
+Example: Using DHT22 Temperature and Humidity Sensor with BaristaOS System
 
 This example demonstrates how to integrate the DHT22 (AM2302) sensor with your
 espresso machine monitoring setup.
@@ -8,11 +8,11 @@ espresso machine monitoring setup.
 
 import os
 
-from smart_espresso.analog_sensor.ads1115_analog_sensor import ADS1115ADC
-from smart_espresso.analog_sensor.dht22_sensor import DHT22Sensor
-from smart_espresso.analog_sensor.pressure_analog_sensor import PressureAnalogSensor
-from smart_espresso.smart_espresso import SmartEspresso
-from smart_espresso.utils import strtobool
+from baristaos.analog_sensor.ads1115_analog_sensor import ADS1115ADC
+from baristaos.analog_sensor.dht22_sensor import DHT22Sensor
+from baristaos.analog_sensor.pressure_analog_sensor import PressureAnalogSensor
+from baristaos.app import BaristaOS
+from baristaos.utils import strtobool
 
 # Optional: Setup display
 try:
@@ -30,7 +30,7 @@ HA_ENABLE = strtobool(os.environ.get("HA_ENABLE", "False"))
 client_ha = None
 
 if HA_ENABLE:
-    from smart_espresso.home_assistant import DEFAULT_TIMEOUT, Client
+    from baristaos.home_assistant import DEFAULT_TIMEOUT, Client
 
     HA_URL = os.environ.get("HA_URL")
     HA_TOKEN = os.environ.get("HA_TOKEN")
@@ -70,14 +70,14 @@ digital_sensors = [
     )
 ]
 
-print("Starting Smart Espresso with DHT22 sensor...")
+print("Starting BaristaOS with DHT22 sensor...")
 print("Monitoring:")
 print("  - Brew head pressure (ADS1115 CH0)")
 print("  - Boiler pressure (ADS1115 CH1)")
 print("  - Temperature & Humidity (DHT22 on GPIO4)")
 
 # Run the monitoring system
-se = SmartEspresso(
+se = BaristaOS(
     analog_devices=analog_devices,
     digital_sensors=digital_sensors,
     client_ha=client_ha,
@@ -88,4 +88,4 @@ se = SmartEspresso(
 try:
     se.run()
 except KeyboardInterrupt:
-    print("\nStopping Smart Espresso...")
+    print("\nStopping BaristaOS...")

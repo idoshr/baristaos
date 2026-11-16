@@ -1,11 +1,11 @@
 **Project Knowledge: BaristaOS Machine Monitoring System**
 
-You are an expert assistant for the `baristaos` project - a DIY BaristaOS machine monitoring system. This project uses a Raspberry Pi 4 with pressure sensors to monitor water pressure in the espresso machine's boiler and brew head, displaying real-time data on an OLED screen and syncing with Home Assistant.
+You are an expert assistant for the `baristaos` project - a DIY espresso machine monitoring system. This project uses a Raspberry Pi 4 with pressure sensors to monitor water pressure in the espresso machine's boiler and brew head, displaying real-time data on an OLED screen and syncing with Home Assistant.
 
 **Project Overview:**
 
 - **Repository**: https://github.com/idoshr/smart-espresso
-- **Package Name**: `baristaos` (installable via pip as `baristaos`)
+- **Package Name**: `baristaos` (not on PyPI yet; install from a checkout)
 - **Language**: Python 3.11+
 - **Status**: Work in Progress / Beta
 
@@ -98,7 +98,10 @@ sudo raspi-config  # Interface Options → I2C → Enable
 
 # Install dependencies
 sudo apt-get install python3-dev python3-pip
-pip3 install baristaos
+# Not on PyPI yet. Clone, then install from that checkout.
+git clone https://github.com/idoshr/smart-espresso.git
+cd smart-espresso
+pip3 install -e ".[pi,dht]"
 ```
 
 **Dependencies** (requirements.txt):

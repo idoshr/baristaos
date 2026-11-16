@@ -144,7 +144,7 @@ pythonpath = ["."]
 filterwarnings = [
   "error",
   "ignore::ResourceWarning",
-  "ignore::DeprecationWarning:smart_espress",
+  "ignore::DeprecationWarning:baristaos",
   "ignore::DeprecationWarning:tests",
   "ignore:.*deprecated and ignored since IPython.*:DeprecationWarning"
   ]

@@ -144,6 +144,25 @@ sampler and DHT threads before the process exits. `WEB_ENABLE=false` still
 tracks machine state, the tank and shot history; only the HTTP server is
 absent.
 
+## Upgrading from Smart Espresso
+
+An existing Pi install runs `smart-espresso.service` and reads
+`/etc/smart-espresso.env`. From the checkout:
+
+```bash
+sudo systemctl disable --now smart-espresso.service
+sudo rm -f /etc/systemd/system/smart-espresso.service
+git pull
+pip3 install -e ".[pi,dht]"
+sudo mv /etc/smart-espresso.env /etc/baristaos.env
+sudo cp deploy/baristaos.service /etc/systemd/system/baristaos.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now baristaos.service
+```
+
+`deploy/baristaos.service` reads `/etc/baristaos.env`. Shot history moves
+from `~/.smart_espresso` to `~/.baristaos` on first start.
+
 ## Configuration
 
 Set via environment variables:
@@ -284,7 +303,7 @@ python scripts/hil_checklist.py --sim
 ```
 
 `SIM_SEED` (default 59) only shifts the flow square wave. The demo cycle
-heats, pulls a shot, flushes, steams, faults the head for two seconds,
+heats, runs a shot, flushes, steams, faults the head for two seconds,
 and repeats. Simulator shot history defaults to
 `~/.baristaos/sim_shot_history.json`.
 

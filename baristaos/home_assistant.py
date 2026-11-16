@@ -64,7 +64,7 @@ def machine_states(machine, tank):
             entity_id="sensor.espresso_machine_state",
             state=str(machine["state"]),
             attributes={
-                "friendly_name": "BaristaOS",
+                "friendly_name": "BaristaOS Machine",
                 "label": machine.get("label"),
                 "severity": machine.get("severity"),
             },

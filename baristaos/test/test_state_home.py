@@ -1,7 +1,9 @@
 """The move from ~/.smart_espresso to ~/.baristaos."""
 
 import logging
+import shutil
 
+from baristaos import state_home
 from baristaos.shot_history import ShotHistory
 from baristaos.state_home import expand_state_path, state_dir
 
@@ -73,6 +75,65 @@ def test_failed_move_falls_back_to_the_old_folder(tmp_path, monkeypatch):
     assert open(resolved, encoding="utf-8").read() == "kept"
     assert old.is_dir()
     assert not (tmp_path / ".baristaos").exists()
+
+
+def test_partial_move_is_removed_and_the_next_start_keeps_history(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    old = tmp_path / ".smart_espresso"
+    old.mkdir()
+    (old / "shot_history.json").write_text("history", encoding="utf-8")
+    new = tmp_path / ".baristaos"
+
+    def partial(*_args, **_kwargs):
+        new.mkdir()
+        (new / "shot_history.json").write_text("partial", encoding="utf-8")
+        raise OSError("cross-device")
+
+    real_move = shutil.move
+    monkeypatch.setattr("baristaos.state_home.shutil.move", partial)
+    assert state_dir() == str(old)
+    assert not new.exists()
+    assert (old / "shot_history.json").read_text(encoding="utf-8") == "history"
+
+    state_home._chosen.clear()
+    monkeypatch.setattr("baristaos.state_home.shutil.move", real_move)
+    assert state_dir() == str(new)
+    assert (new / "shot_history.json").read_text(encoding="utf-8") == "history"
+    assert not old.exists()
+
+
+def test_failed_move_restores_a_preexisting_empty_dir(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    old = tmp_path / ".smart_espresso"
+    new = tmp_path / ".baristaos"
+    old.mkdir()
+    new.mkdir()
+    (old / "shot_history.json").write_text("history", encoding="utf-8")
+
+    def partial(*_args, **_kwargs):
+        new.mkdir()
+        (new / "partial").write_text("x", encoding="utf-8")
+        raise OSError("cross-device")
+
+    monkeypatch.setattr("baristaos.state_home.shutil.move", partial)
+    assert state_dir() == str(old)
+    assert (old / "shot_history.json").read_text(encoding="utf-8") == "history"
+    assert new.is_dir()
+    assert list(new.iterdir()) == []
+
+
+def test_empty_new_folder_migrates_the_old_one(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    old = tmp_path / ".smart_espresso"
+    new = tmp_path / ".baristaos"
+    old.mkdir()
+    new.mkdir()
+    (old / "shot_history.json").write_text("history", encoding="utf-8")
+    assert state_dir() == str(new)
+    assert (new / "shot_history.json").read_text(encoding="utf-8") == "history"
+    assert not old.exists()
 
 
 def test_shot_history_opens_the_moved_folder(tmp_path, monkeypatch):

@@ -167,7 +167,7 @@ class TestProductLanguage:
             "sensor.espresso_water_tank",
         ]
         assert [state.attributes["friendly_name"] for state in states] == [
-            "BaristaOS",
+            "BaristaOS Machine",
             "BaristaOS Shot Timer",
             "BaristaOS Water Tank",
         ]

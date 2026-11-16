@@ -1,4 +1,4 @@
-# Smart Espresso
+# BaristaOS
 
 **Every shot, on the record.**
 
@@ -6,11 +6,12 @@
 [![License](https://img.shields.io/badge/license-BSD--3--Clause-green.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-beta-yellow.svg)](https://github.com/idoshr/smart-espresso)
 
-![The dashboard on a phone, pulling a shot at 26 seconds with its pressure curve drawing live. Demo data, not a real machine.](docs/img/hero-default-captioned.png)
+![The dashboard on a phone, running a shot at 26 seconds with its pressure curve drawing live. Demo data, not a real machine.](docs/img/hero-default-captioned.png)
 
-A Raspberry Pi 4 that watches your espresso machine and saves every shot.
-You see its pressure curve, flow, shot time and volume on your phone, over
-your own network.
+BaristaOS is the home for your espresso. Today it runs on a Raspberry Pi 4
+that monitors your machine and saves every shot, with the pressure curve,
+flow, shot time and volume on your phone, over your own network. It never
+controls the machine.
 
 - **Every shot is saved.** Each one keeps its pressure and flow curves,
   time and volume. The history survives a reboot and keeps the last 200.
@@ -23,8 +24,8 @@ your own network.
 - **Your machine in Home Assistant.** Each sensor shows up as its own
   entity, ready for your automations.
 
-It reads your machine and never drives it. The sensors sit on the plumbing,
-and the machine's own controls stay as they are. If you want pressure
+The sensors sit on the plumbing, and the machine's own controls stay as
+they are. If you want pressure
 profiling, a control mod such as Gaggiuino or GaggiMate is the better fit.
 
 No Pi yet? [Run the dashboard on simulated sensors](#simulator) first.
@@ -43,8 +44,8 @@ Built for your home network. Beta, and still a work in progress.
 - OLED display (SH1106 128x64)
 - Machine state classification (off / heating / ready / brewing / steaming / over pressure)
 - Shot history with head-pressure and flow curves, kept across reboots
-- Water tank counter with refill reset, sized to your machine's tank,
-  so you know before it runs dry
+<!-- markdownlint-disable-next-line MD013 -->
+- Water tank counter with refill reset, sized to your machine's tank, so you know before it runs dry
 - Web dashboard for phone and desktop: live pressure curve and shot timer,
   pressure meters, machine state, recent shots, water tank and room readings
 - Machine profiles: pick your model for its tank size and pressure target,
@@ -124,7 +125,7 @@ output) → A2. See the usage example below.
 
 ## Installation
 
-smart-espresso is not published on PyPI yet. `pip install smart-espresso`
+baristaos is not published on PyPI yet. `pip install baristaos`
 fails. Clone the repository and install from that checkout.
 
 On a Raspberry Pi, install the hardware extras from the clone. The `dht`
@@ -151,7 +152,7 @@ pip3 install -e .
 
 ## Running on boot
 
-`deploy/smart-espresso.service` is a systemd unit with `Restart=always`
+`deploy/baristaos.service` is a systemd unit with `Restart=always`
 and `RestartSec=2`, so the monitor comes back if it exits. `Type=notify`
 and `WatchdogSec=30` expect a ready ping and a watchdog ping from the
 render loop about every 10 s. `After=time-sync.target` and
@@ -160,16 +161,84 @@ because the Pi has no battery-backed clock.
 
 Copy the unit to `/etc/systemd/system/`, point `ExecStart` and
 `WorkingDirectory` at this checkout, and put secrets such as `HA_TOKEN`
-in `/etc/smart-espresso.env` (mode `0600`). Then:
+in `/etc/baristaos.env` (mode `0600`). Then:
 
 ```bash
-sudo systemctl enable --now smart-espresso.service
+sudo systemctl enable --now baristaos.service
 ```
 
-SIGINT and SIGTERM flush the tank, close an open pull, and stop the flow
+SIGINT and SIGTERM flush the tank, close an open shot, and stop the flow
 sampler and DHT threads before the process exits. `WEB_ENABLE=false` still
 tracks machine state, the tank and shot history; only the HTTP server is
 absent.
+
+## Upgrading from Smart Espresso
+
+An existing Pi install runs `smart-espresso.service` from
+`/opt/smart-espresso` and may read `/etc/smart-espresso.env`.
+`deploy/baristaos.service` runs `/usr/bin/python3 /opt/baristaos/main.py`
+with working directory `/opt/baristaos`. The env file is optional
+(`EnvironmentFile=-/etc/baristaos.env`). Stop the old service before
+moving the checkout. Do not run both: they share the port and the sensors.
+Do not reboot until the old unit is disabled.
+
+```bash
+sudo systemctl stop smart-espresso
+OLD=$(sudo git -C /opt/smart-espresso rev-parse HEAD)
+echo "$OLD"
+sudo mv /opt/smart-espresso /opt/baristaos
+if [ -f /etc/smart-espresso.env ]; then
+  sudo mv /etc/smart-espresso.env /etc/baristaos.env
+fi
+sudo git -C /opt/baristaos pull
+sudo pip3 install -e "/opt/baristaos[pi,dht]"
+sudo cp /opt/baristaos/deploy/baristaos.service /etc/systemd/system/baristaos.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now baristaos
+systemctl status baristaos
+```
+
+If any step fails before `/opt/smart-espresso` has been moved, run
+`sudo systemctl start smart-espresso`.
+
+Keep this terminal open, or note the commit that `echo "$OLD"` prints;
+the rollback needs it. The unit uses `/usr/bin/python3`, not a venv in
+the checkout. The install is editable, so that `pip3` command has to be
+run again from `/opt/baristaos` after the move. Neither unit sets
+`User=`, so systemd runs them as root and shot history moves from
+`/root/.smart_espresso` to `/root/.baristaos` on first start.
+
+When `systemctl status baristaos` shows it running, retire the old unit:
+
+```bash
+sudo systemctl disable smart-espresso
+sudo rm -f /etc/systemd/system/smart-espresso.service
+sudo systemctl daemon-reload
+```
+
+### Only if something went wrong
+
+Do not run this after a successful upgrade. Stop BaristaOS and put the
+old checkout back before starting the old service.
+`systemctl start smart-espresso` alone is not enough once the folder
+has moved and the package is renamed. In a new shell, paste the noted
+commit in place of `$OLD`.
+
+```bash
+sudo systemctl disable --now baristaos
+sudo rm -f /etc/systemd/system/baristaos.service
+sudo systemctl daemon-reload
+sudo git -C /opt/baristaos checkout "$OLD"
+sudo mv /opt/baristaos /opt/smart-espresso
+if [ -f /etc/baristaos.env ]; then
+  sudo mv /etc/baristaos.env /etc/smart-espresso.env
+fi
+if sudo test -d /root/.baristaos && ! sudo test -e /root/.smart_espresso; then
+  sudo mv /root/.baristaos /root/.smart_espresso
+fi
+sudo pip3 install -e "/opt/smart-espresso[pi,dht]"
+sudo systemctl start smart-espresso
+```
 
 ## Configuration
 
@@ -186,12 +255,12 @@ export WEB_HOST="0.0.0.0"          # 0.0.0.0 exposes it on the LAN
 export WEB_PORT="8080"
 
 export WATER_TANK_ML="2000"        # Pre-profile tank size, migrated once
-export WATER_TANK_STATE="~/.smart_espresso/water_tank.json"
+export WATER_TANK_STATE="~/.baristaos/water_tank.json"
 
 export MACHINE_PROFILE=""          # Unset until a model is chosen
-export MACHINE_PROFILE_STATE="~/.smart_espresso/machine_profile.json"
+export MACHINE_PROFILE_STATE="~/.baristaos/machine_profile.json"
 
-export SHOT_HISTORY_STATE="~/.smart_espresso/shot_history.json"
+export SHOT_HISTORY_STATE="~/.baristaos/shot_history.json"
 export SHOT_HISTORY_MAX="200"      # Completed shots kept on disk
 
 export DHT_ENABLE="True"          # Ambient DHT22/AM2302 sensor (GPIO)
@@ -275,7 +344,7 @@ To integrate with Home Assistant, you need a long-lived access token:
 2. Click on your profile (bottom left corner)
 3. Scroll down to "Long-Lived Access Tokens" section
 4. Click "Create Token"
-5. Give it a descriptive name (e.g., "Smart Espresso")
+5. Give it a descriptive name (e.g., "BaristaOS")
 6. Copy the generated token and use it as `HA_TOKEN`
 
 **Important**: Save the token immediately. It is not shown again.
@@ -306,17 +375,17 @@ simulator.
 ```bash
 python main.py --sim --seed 59
 python main.py --sim --record /tmp/session.csv
-python main.py --replay smart_espresso/test/replay/session.csv
+python main.py --replay baristaos/test/replay/session.csv
 python scripts/hil_checklist.py --sim
 ```
 
 `SIM_SEED` (default 59) only shifts the flow square wave. The demo cycle
-heats, pulls a shot, flushes, steams, faults the head for two seconds,
+heats, runs a shot, flushes, steams, faults the head for two seconds,
 and repeats. Simulator shot history defaults to
-`~/.smart_espresso/sim_shot_history.json`.
+`~/.baristaos/sim_shot_history.json`.
 
 `--record` writes `t,ch,volts` (channel 0 head, 1 boiler, 2 flow).
-CI replays `smart_espresso/test/replay/session.csv`: three pulls and one
+CI replays `baristaos/test/replay/session.csv`: three shots and one
 flush. Those traces come from this simulator with seed 59. They are not
 a bench capture.
 
@@ -341,11 +410,11 @@ Head and boiler are the render loop (10 Hz). Brew counts every virtual
 See [main.py](main.py) for complete example.
 
 ```python
-from smart_espresso.analog_sensor.ads1115_analog_sensor import ADS1115ADC
-from smart_espresso.analog_sensor.pressure_analog_sensor import PressureAnalogSensor
-from smart_espresso.analog_sensor.water_flow_sensor import WaterFlowAnalogSensor
-from smart_espresso.smart_espresso import SmartEspresso
-from smart_espresso.web.status_server import StatusServer
+from baristaos.analog_sensor.ads1115_analog_sensor import ADS1115ADC
+from baristaos.analog_sensor.pressure_analog_sensor import PressureAnalogSensor
+from baristaos.analog_sensor.water_flow_sensor import WaterFlowAnalogSensor
+from baristaos.app import BaristaOS
+from baristaos.web.status_server import StatusServer
 
 # Create sensors. The water flow meter's pulse output is wired to the
 # ADS1115 A2 channel; the sensor counts pulses by sampling that channel.
@@ -361,7 +430,7 @@ analog_devices = [
 ]
 
 # Run, serving the mobile dashboard on http://<pi-ip>:8080
-se = SmartEspresso(
+se = BaristaOS(
     analog_devices=analog_devices,
     client_ha=None,
     display=None,
@@ -433,13 +502,13 @@ outage is over. Readings already on screen stay at full contrast with a
 timer does not keep counting. **I refilled the tank** cannot reset the count
 while the machine is unreachable, and a
 failed reset explains why in a toast. To add your own badge,
-drop `logo.svg` into `smart_espresso/web/static/` and put an
+drop `logo.svg` into `baristaos/web/static/` and put an
 `<img src="/logo.svg">` in the header of
-[`index.html`](smart_espresso/web/static/index.html).
+[`index.html`](baristaos/web/static/index.html).
 
 ### Machine State
 
-[`machine_state.py`](smart_espresso/machine_state.py) classifies the machine
+[`machine_state.py`](baristaos/machine_state.py) classifies the machine
 from the live readings, in this priority order:
 
 | State | Condition | Meaning |
@@ -476,12 +545,12 @@ history below.
 
 ### Shot history
 
-[`shot_history.py`](smart_espresso/shot_history.py) keeps every completed
-pull, not just the last one. A pull is saved when it flowed for at least
+[`shot_history.py`](baristaos/shot_history.py) keeps every completed
+shot, not just the last one. A shot is saved when it flowed for at least
 2 s, reached 5 ml, and head pressure peaked at the brew threshold. A flush,
 rinse, or backflush is left out. Each record stores:
 
-- when the pull started (`started_at`, local time with its UTC offset)
+- when the shot started (`started_at`, local time with its UTC offset)
 - how long water was flowing (`seconds`, the same number as the live timer)
 - the volume in millilitres
 - headline peaks for head pressure, boiler pressure and flow
@@ -493,13 +562,13 @@ rinse, or backflush is left out. Each record stores:
 A shot marked that way is re-stamped if the clock then steps forward by
 30 seconds or more while this process is running.
 
-`samples[].t` is elapsed time from the start of the pull, pauses included,
+`samples[].t` is elapsed time from the start of the shot, pauses included,
 so the chart shows the pressure profile as it happened. The duration above
 the chart does not count those pauses. Peaks are taken from every reading,
 including ones that fell between two stored points.
 
 The log is written to `SHOT_HISTORY_STATE` (default
-`~/.smart_espresso/shot_history.json`) once per completed pull. The write
+`~/.baristaos/shot_history.json`) once per completed shot. The write
 runs off the render thread. The temp file and its directory are fsynced,
 and the previous good file is kept as `shot_history.json.bak`.
 `SHOT_HISTORY_MAX` (default 200) caps the file; the oldest shots fall off.
@@ -534,7 +603,7 @@ An unknown id answers `404`.
 
 ### Water Tank
 
-[`water_tank.py`](smart_espresso/water_tank.py) subtracts the flow sensor's
+[`water_tank.py`](baristaos/water_tank.py) subtracts the flow sensor's
 lifetime volume from a baseline, so _used_ is the water used since the tank
 was last filled. Pressing **I refilled the tank** (a two-tap confirm, so a stray tap
 cannot wipe the count) calls `POST /api/tank/reset`, which moves the baseline
@@ -615,7 +684,7 @@ default and has no authentication — keep it on a trusted home network, or set
 ## Project Structure
 
 ```text
-smart_espresso/
+baristaos/
 ├── analog_sensor/
 │   ├── analog_sensor.py           # Base classes (ADCInterface, AnalogSensor)
 │   ├── mcp3008_analog_sensor.py   # MCP3008 ADC
@@ -630,13 +699,13 @@ smart_espresso/
 │   ├── status_server.py           # Flask status API + dashboard server
 │   └── static/index.html          # Mobile dashboard page
 ├── test/                          # Unit tests
-├── smart_espresso.py              # Main class
+├── app.py                     # Main class
 └── utils.py                       # Helpers
 ```
 
 ## Contributing
 
-Pull requests welcome! Run tests with `pytest smart_espresso/test/`
+Pull requests welcome! Run tests with `pytest baristaos/test/`
 
 ## License
 

@@ -135,4 +135,4 @@ Thumbs.db
 
 # Project specific
 *.log
-smart_espresso/_version.py
+baristaos/_version.py

@@ -27,4 +27,4 @@ jobs:
       - name: Type check
         run: |
           pip install mypy
-          mypy smart_espresso main.py
+          mypy baristaos main.py

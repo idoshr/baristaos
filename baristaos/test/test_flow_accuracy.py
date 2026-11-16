@@ -95,9 +95,7 @@ class TestFlowReplay(unittest.TestCase):
         high_time = period * duty
         clock = FakeClock(0.0)
         adc = HoldADC(0.0)
-        with mock.patch(
-            "baristaos.analog_sensor.water_flow_sensor.monotonic", clock
-        ):
+        with mock.patch("baristaos.analog_sensor.water_flow_sensor.monotonic", clock):
             sensor = WaterFlowAnalogSensor(
                 adc=adc,
                 name="Brew",
@@ -146,9 +144,7 @@ class TestFlowReplay(unittest.TestCase):
             tank=WaterTank(state_path=None),
             shot_history=ShotHistory(state_path=None),
         )
-        with mock.patch(
-            "baristaos.analog_sensor.water_flow_sensor.monotonic", clock
-        ):
+        with mock.patch("baristaos.analog_sensor.water_flow_sensor.monotonic", clock):
             sensor = WaterFlowAnalogSensor(adc=adc, name="Brew", pulses_per_liter=100)
             sensor.read()
             server.update([sensor])
@@ -170,9 +166,7 @@ class TestFlowReplay(unittest.TestCase):
         clock = FakeClock(0.0)
         adc = HoldADC(0.0)
         interval = 0.05
-        with mock.patch(
-            "baristaos.analog_sensor.water_flow_sensor.monotonic", clock
-        ):
+        with mock.patch("baristaos.analog_sensor.water_flow_sensor.monotonic", clock):
             sensor = WaterFlowAnalogSensor(
                 adc=adc,
                 name="Brew",

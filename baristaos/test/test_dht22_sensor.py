@@ -3,8 +3,8 @@ import threading
 import time
 import unittest
 
-from baristaos.shot_history import ShotHistory
 from baristaos.app import BaristaOS
+from baristaos.shot_history import ShotHistory
 from baristaos.water_tank import WaterTank
 from baristaos.web.status_server import StatusServer
 
@@ -107,9 +107,7 @@ class TestDhtPollThread(unittest.TestCase):
             tank=WaterTank(state_path=None),
             shot_history=ShotHistory(state_path=None),
         )
-        app = BaristaOS(
-            digital_sensors=[sensor], web_server=server, render_interval=0
-        )
+        app = BaristaOS(digital_sensors=[sensor], web_server=server, render_interval=0)
         # A fresh sample is published.
         clock.now -= 0.01
         app._tick()

@@ -113,9 +113,7 @@ class TestFlushFeedsTheTank(unittest.TestCase):
         patchers = [
             mock.patch("baristaos.machine_state.monotonic", clock),
             mock.patch("baristaos.web.status_server.monotonic", clock),
-            mock.patch(
-                "baristaos.analog_sensor.water_flow_sensor.monotonic", clock
-            ),
+            mock.patch("baristaos.analog_sensor.water_flow_sensor.monotonic", clock),
         ]
         for patcher in patchers:
             patcher.start()

@@ -182,9 +182,7 @@ class TestMCP3008(unittest.TestCase):
 
         gpio = _module("gpiozero", MCP3008=_Pot)
         saved_gpio = sys.modules.get("gpiozero")
-        saved_mod = sys.modules.get(
-            "baristaos.analog_sensor.mcp3008_analog_sensor"
-        )
+        saved_mod = sys.modules.get("baristaos.analog_sensor.mcp3008_analog_sensor")
         sys.modules["gpiozero"] = gpio
         sys.modules.pop("baristaos.analog_sensor.mcp3008_analog_sensor", None)
         try:
@@ -208,13 +206,9 @@ class TestMCP3008(unittest.TestCase):
             else:
                 sys.modules["gpiozero"] = saved_gpio
             if saved_mod is None:
-                sys.modules.pop(
-                    "baristaos.analog_sensor.mcp3008_analog_sensor", None
-                )
+                sys.modules.pop("baristaos.analog_sensor.mcp3008_analog_sensor", None)
             else:
-                sys.modules[
-                    "baristaos.analog_sensor.mcp3008_analog_sensor"
-                ] = saved_mod
+                sys.modules["baristaos.analog_sensor.mcp3008_analog_sensor"] = saved_mod
 
 
 class TestSimProgram(unittest.TestCase):

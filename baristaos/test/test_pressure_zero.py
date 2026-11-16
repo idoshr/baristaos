@@ -5,8 +5,8 @@ import unittest
 
 from baristaos.analog_sensor.analog_sensor import ADCInterface
 from baristaos.analog_sensor.pressure_analog_sensor import PressureAnalogSensor
-from baristaos.shot_history import ShotHistory
 from baristaos.app import BaristaOS
+from baristaos.shot_history import ShotHistory
 from baristaos.water_tank import WaterTank
 from baristaos.web.status_server import StatusServer
 
@@ -155,9 +155,7 @@ class TestPressureZero(unittest.TestCase):
             shot_history=ShotHistory(state_path=None),
         )
         server.start = lambda: None
-        app = BaristaOS(
-            analog_devices=[sensor], web_server=server, render_interval=0
-        )
+        app = BaristaOS(analog_devices=[sensor], web_server=server, render_interval=0)
         app.run(max_ticks=1)
 
         payload = server.app.test_client().get("/api/status").get_json()

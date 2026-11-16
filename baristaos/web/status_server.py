@@ -10,11 +10,7 @@ from flask import Flask, jsonify, request, send_from_directory
 
 from baristaos.analog_sensor.pressure_analog_sensor import PressureAnalogSensor
 from baristaos.analog_sensor.water_flow_sensor import WaterFlowAnalogSensor
-from baristaos.machine_profile import (
-    MachineProfileStore,
-    ProfileError,
-    global_settings,
-)
+from baristaos.machine_profile import MachineProfileStore, ProfileError, global_settings
 from baristaos.machine_state import MachineStateClassifier
 from baristaos.shot_history import ShotHistory
 from baristaos.water_tank import WaterTank

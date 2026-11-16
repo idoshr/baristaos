@@ -7,11 +7,11 @@ from unittest import mock
 from baristaos.analog_sensor.analog_sensor import MedianFilterADC
 from baristaos.analog_sensor.pressure_analog_sensor import PressureAnalogSensor
 from baristaos.analog_sensor.water_flow_sensor import WaterFlowAnalogSensor
+from baristaos.app import BaristaOS
 from baristaos.shot_history import ShotHistory
 from baristaos.sim.adc import CsvRecorder, ReplayADC, SignalADC, load_recording
 from baristaos.sim.machine import SimulatedMachine, reference_program
 from baristaos.sim.sensors import SimDHT, SimOLED
-from baristaos.app import BaristaOS
 from baristaos.water_tank import WaterTank
 from baristaos.web.status_server import StatusServer
 

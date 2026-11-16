@@ -8,9 +8,9 @@ from unittest import mock
 
 from baristaos.analog_sensor.analog_sensor import ADCInterface
 from baristaos.analog_sensor.pressure_analog_sensor import PressureAnalogSensor
+from baristaos.app import BaristaOS
 from baristaos.home_assistant import DEFAULT_TIMEOUT, HomeAssistantPublisher, State
 from baristaos.shot_history import ShotHistory
-from baristaos.app import BaristaOS
 from baristaos.water_tank import WaterTank
 from baristaos.web.status_server import StatusServer
 
@@ -210,8 +210,6 @@ class TestRenderLoop(unittest.TestCase):
         self.assertIn("sensor.espresso_machine_state", ids)
 
     def test_misleading_comment_is_gone(self):
-        source = (ROOT / "baristaos" / "app.py").read_text(
-            encoding="utf-8"
-        )
+        source = (ROOT / "baristaos" / "app.py").read_text(encoding="utf-8")
         self.assertNotIn("can't stall sensor sampling", source)
         self.assertIn("cannot stall", source)

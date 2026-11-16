@@ -22,8 +22,7 @@ def _circuitpython_reader(pin: int):
         import board
     except ImportError as error:
         raise ImportError(
-            "DHT22 driver not found. Install it with: "
-            "pip install 'baristaos[dht]'"
+            "DHT22 driver not found. Install it with: " "pip install 'baristaos[dht]'"
         ) from error
 
     gpio = getattr(board, f"D{pin}", None)

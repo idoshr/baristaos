@@ -260,9 +260,7 @@ class TestMachineStateClassifier(unittest.TestCase):
         # so an out-of-range day number is fine for the test).
         stamp = localtime()[:3]
         next_day = (stamp[0], stamp[1], stamp[2] + 1)
-        with mock.patch(
-            "baristaos.machine_state.localtime", return_value=next_day
-        ):
+        with mock.patch("baristaos.machine_state.localtime", return_value=next_day):
             self.classifier.update(0.0, 1.2)
 
         today = self.classifier.snapshot()["today"]

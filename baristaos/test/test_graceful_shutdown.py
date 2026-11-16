@@ -231,9 +231,9 @@ class TestGracefulShutdown(unittest.TestCase):
         self.assertGreaterEqual(history.get(1)["ml"], 5)
 
     def test_headless_sim_tracks_state_tank_and_history(self):
+        from baristaos.app import BaristaOS
         from baristaos.sim.machine import Segment, SimulatedMachine
         from baristaos.sim.session import build_sim_sensors, drive, virtual_clock
-        from baristaos.app import BaristaOS
 
         segments = []
         cursor = 0.0

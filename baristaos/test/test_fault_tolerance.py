@@ -8,9 +8,9 @@ from unittest import mock
 import main
 from baristaos.analog_sensor.analog_sensor import ADCInterface
 from baristaos.analog_sensor.pressure_analog_sensor import PressureAnalogSensor
+from baristaos.app import BaristaOS
 from baristaos.machine_state import MachineStateClassifier
 from baristaos.shot_history import ShotHistory
-from baristaos.app import BaristaOS
 from baristaos.water_tank import WaterTank
 from baristaos.web.status_server import StatusServer
 
@@ -57,9 +57,7 @@ class TestSensorFaults(unittest.TestCase):
             return real(head, boiler, flow, total, flow_sensor=flow_sensor)
 
         server.classifier.update = spy
-        app = BaristaOS(
-            analog_devices=[sensor], web_server=server, render_interval=0
-        )
+        app = BaristaOS(analog_devices=[sensor], web_server=server, render_interval=0)
         # start() binds a port; the assertions use the in-process snapshot
         # and the test client, so the listen thread is not required.
         server.start = lambda: None
@@ -164,9 +162,7 @@ class TestMissingDevices(unittest.TestCase):
 
         server = _server()
         server.start = lambda: None
-        app = BaristaOS(
-            analog_devices=sensors, web_server=server, render_interval=0
-        )
+        app = BaristaOS(analog_devices=sensors, web_server=server, render_interval=0)
         self.assertEqual(app.run(max_ticks=1), 1)
         for sensor in sensors:
             if hasattr(sensor, "stop"):

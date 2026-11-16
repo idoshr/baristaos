@@ -6,7 +6,8 @@
 [![License](https://img.shields.io/badge/license-BSD--3--Clause-green.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-beta-yellow.svg)](https://github.com/idoshr/smart-espresso)
 
-![The dashboard on a phone, running a shot at 26 seconds with its pressure curve drawing live. Demo data, not a real machine.](docs/img/hero-default-captioned.png)
+<!-- markdownlint-disable-next-line MD013 MD033 -->
+<p align="center"><img src="docs/img/hero-default-captioned.png" width="320" alt="The dashboard on a phone, running a shot at 26 seconds with its pressure curve drawing live. Demo data, not a real machine."></p>
 
 BaristaOS is the home for your espresso. Today it runs on a Raspberry Pi 4
 that monitors your machine and saves every shot, with the pressure curve,

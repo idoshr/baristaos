@@ -156,20 +156,22 @@ Do not reboot until the old unit is disabled.
 
 ```bash
 sudo systemctl stop smart-espresso
-OLD=$(git -C /opt/smart-espresso rev-parse HEAD)
+OLD=$(sudo git -C /opt/smart-espresso rev-parse HEAD)
 echo "$OLD"
 sudo mv /opt/smart-espresso /opt/baristaos
 if [ -f /etc/smart-espresso.env ]; then
   sudo mv /etc/smart-espresso.env /etc/baristaos.env
 fi
-cd /opt/baristaos
-git pull
-pip3 install -e ".[pi,dht]"
-sudo cp deploy/baristaos.service /etc/systemd/system/baristaos.service
+sudo git -C /opt/baristaos pull
+sudo pip3 install -e "/opt/baristaos[pi,dht]"
+sudo cp /opt/baristaos/deploy/baristaos.service /etc/systemd/system/baristaos.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now baristaos
 systemctl status baristaos
 ```
+
+If any step fails before `/opt/smart-espresso` has been moved, run
+`sudo systemctl start smart-espresso`.
 
 Keep this terminal open, or note the commit that `echo "$OLD"` prints;
 the rollback needs it. The unit uses `/usr/bin/python3`, not a venv in
@@ -178,18 +180,27 @@ run again from `/opt/baristaos` after the move. Neither unit sets
 `User=`, so systemd runs them as root and shot history moves from
 `/root/.smart_espresso` to `/root/.baristaos` on first start.
 
-### If something goes wrong
+When `systemctl status baristaos` shows it running, retire the old unit:
 
-Stop BaristaOS and put the old checkout back before starting the old
-service. `systemctl start smart-espresso` alone is not enough once the
-folder has moved and the package is renamed. In a new shell, paste the
-noted commit in place of `$OLD`.
+```bash
+sudo systemctl disable smart-espresso
+sudo rm -f /etc/systemd/system/smart-espresso.service
+sudo systemctl daemon-reload
+```
+
+### Only if something went wrong
+
+Do not run this after a successful upgrade. Stop BaristaOS and put the
+old checkout back before starting the old service.
+`systemctl start smart-espresso` alone is not enough once the folder
+has moved and the package is renamed. In a new shell, paste the noted
+commit in place of `$OLD`.
 
 ```bash
 sudo systemctl disable --now baristaos
 sudo rm -f /etc/systemd/system/baristaos.service
 sudo systemctl daemon-reload
-git -C /opt/baristaos checkout "$OLD"
+sudo git -C /opt/baristaos checkout "$OLD"
 sudo mv /opt/baristaos /opt/smart-espresso
 if [ -f /etc/baristaos.env ]; then
   sudo mv /etc/baristaos.env /etc/smart-espresso.env
@@ -197,17 +208,8 @@ fi
 if sudo test -d /root/.baristaos && ! sudo test -e /root/.smart_espresso; then
   sudo mv /root/.baristaos /root/.smart_espresso
 fi
-cd /opt/smart-espresso
-pip3 install -e ".[pi,dht]"
+sudo pip3 install -e "/opt/smart-espresso[pi,dht]"
 sudo systemctl start smart-espresso
-```
-
-When `systemctl status baristaos` shows it running, retire the old unit:
-
-```bash
-sudo systemctl disable smart-espresso
-sudo rm -f /etc/systemd/system/smart-espresso.service
-sudo systemctl daemon-reload
 ```
 
 ## Configuration

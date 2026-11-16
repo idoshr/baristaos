@@ -146,22 +146,60 @@ absent.
 
 ## Upgrading from Smart Espresso
 
-An existing Pi install runs `smart-espresso.service` and reads
-`/etc/smart-espresso.env`. From the checkout:
+An existing Pi install runs `smart-espresso.service` from
+`/opt/smart-espresso` and may read `/etc/smart-espresso.env`.
+`deploy/baristaos.service` runs `/usr/bin/python3 /opt/baristaos/main.py`
+with working directory `/opt/baristaos`. The env file is optional
+(`EnvironmentFile=-/etc/baristaos.env`). Stop the old service before
+moving the checkout. Do not run both: they share the port and the sensors.
+Do not reboot until the old unit is disabled.
 
 ```bash
-sudo systemctl disable --now smart-espresso.service
-sudo rm -f /etc/systemd/system/smart-espresso.service
+sudo systemctl stop smart-espresso
+OLD=$(git -C /opt/smart-espresso rev-parse HEAD)
+sudo mv /opt/smart-espresso /opt/baristaos
+if [ -f /etc/smart-espresso.env ]; then
+  sudo mv /etc/smart-espresso.env /etc/baristaos.env
+fi
+cd /opt/baristaos
 git pull
 pip3 install -e ".[pi,dht]"
-sudo mv /etc/smart-espresso.env /etc/baristaos.env
 sudo cp deploy/baristaos.service /etc/systemd/system/baristaos.service
 sudo systemctl daemon-reload
-sudo systemctl enable --now baristaos.service
+sudo systemctl enable --now baristaos
+systemctl status baristaos
 ```
 
-`deploy/baristaos.service` reads `/etc/baristaos.env`. Shot history moves
-from `~/.smart_espresso` to `~/.baristaos` on first start.
+The unit uses `/usr/bin/python3`, not a venv in the checkout. The install
+is editable, so that `pip3` command has to be run again from
+`/opt/baristaos` after the move. Shot history moves from
+`~/.smart_espresso` to `~/.baristaos` on first start.
+
+### If something goes wrong
+
+Stop BaristaOS and put the old checkout back before starting the old
+service. `systemctl start smart-espresso` alone is not enough once the
+folder has moved and the package is renamed.
+
+```bash
+sudo systemctl stop baristaos
+git -C /opt/baristaos checkout "$OLD"
+sudo mv /opt/baristaos /opt/smart-espresso
+if [ -f /etc/baristaos.env ]; then
+  sudo mv /etc/baristaos.env /etc/smart-espresso.env
+fi
+cd /opt/smart-espresso
+pip3 install -e ".[pi,dht]"
+sudo systemctl start smart-espresso
+```
+
+When `systemctl status baristaos` shows it running, retire the old unit:
+
+```bash
+sudo systemctl disable smart-espresso
+sudo rm -f /etc/systemd/system/smart-espresso.service
+sudo systemctl daemon-reload
+```
 
 ## Configuration
 

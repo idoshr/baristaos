@@ -194,7 +194,7 @@ sudo mv /opt/baristaos /opt/smart-espresso
 if [ -f /etc/baristaos.env ]; then
   sudo mv /etc/baristaos.env /etc/smart-espresso.env
 fi
-if [ -d /root/.baristaos ] && [ ! -e /root/.smart_espresso ]; then
+if sudo test -d /root/.baristaos && ! sudo test -e /root/.smart_espresso; then
   sudo mv /root/.baristaos /root/.smart_espresso
 fi
 cd /opt/smart-espresso

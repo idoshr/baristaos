@@ -157,6 +157,7 @@ Do not reboot until the old unit is disabled.
 ```bash
 sudo systemctl stop smart-espresso
 OLD=$(git -C /opt/smart-espresso rev-parse HEAD)
+echo "$OLD"
 sudo mv /opt/smart-espresso /opt/baristaos
 if [ -f /etc/smart-espresso.env ]; then
   sudo mv /etc/smart-espresso.env /etc/baristaos.env
@@ -170,23 +171,31 @@ sudo systemctl enable --now baristaos
 systemctl status baristaos
 ```
 
-The unit uses `/usr/bin/python3`, not a venv in the checkout. The install
-is editable, so that `pip3` command has to be run again from
-`/opt/baristaos` after the move. Shot history moves from
-`~/.smart_espresso` to `~/.baristaos` on first start.
+Keep this terminal open, or note the commit that `echo "$OLD"` prints;
+the rollback needs it. The unit uses `/usr/bin/python3`, not a venv in
+the checkout. The install is editable, so that `pip3` command has to be
+run again from `/opt/baristaos` after the move. Neither unit sets
+`User=`, so systemd runs them as root and shot history moves from
+`/root/.smart_espresso` to `/root/.baristaos` on first start.
 
 ### If something goes wrong
 
 Stop BaristaOS and put the old checkout back before starting the old
 service. `systemctl start smart-espresso` alone is not enough once the
-folder has moved and the package is renamed.
+folder has moved and the package is renamed. In a new shell, paste the
+noted commit in place of `$OLD`.
 
 ```bash
-sudo systemctl stop baristaos
+sudo systemctl disable --now baristaos
+sudo rm -f /etc/systemd/system/baristaos.service
+sudo systemctl daemon-reload
 git -C /opt/baristaos checkout "$OLD"
 sudo mv /opt/baristaos /opt/smart-espresso
 if [ -f /etc/baristaos.env ]; then
   sudo mv /etc/baristaos.env /etc/smart-espresso.env
+fi
+if [ -d /root/.baristaos ] && [ ! -e /root/.smart_espresso ]; then
+  sudo mv /root/.baristaos /root/.smart_espresso
 fi
 cd /opt/smart-espresso
 pip3 install -e ".[pi,dht]"

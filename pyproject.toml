@@ -1,6 +1,6 @@
 [project]
-name = "smart-espresso"
-description = "Smart espresso machine using a Raspberry Pi 4 and a few sensors."
+name = "baristaos"
+description = "BaristaOS monitors an espresso machine with a Raspberry Pi 4 and a few sensors. It never controls the machine."
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "BSD 3-Clause License"}
@@ -80,19 +80,19 @@ build-backend = "setuptools.build_meta"
 zip-safe = false
 platforms = ["any"]
 packages=[
-  "smart_espresso",
-  "smart_espresso.analog_sensor",
-  "smart_espresso.web",
+  "baristaos",
+  "baristaos.analog_sensor",
+  "baristaos.web",
 ]
 
 [tool.setuptools.package-data]
-"smart_espresso.web" = ["static/*"]
+"baristaos.web" = ["static/*"]
 
 [tool.setuptools.dynamic]
-version = {attr = "smart_espresso._version.version"}
+version = {attr = "baristaos._version.version"}
 
 [tool.setuptools_scm]
-write_to = "smart_espresso/_version.py"
+write_to = "baristaos/_version.py"
 
 [tool.black]
 line-length = 88
@@ -122,13 +122,13 @@ use_parentheses = true
 
 [tool.mypy]
 ignore_missing_imports = true
-exclude = ["smart_espresso/test/"]
+exclude = ["baristaos/test/"]
 
 [tool.coverage.run]
-source = ["smart_espresso"]
+source = ["baristaos"]
 omit = [
-  "smart_espresso/test/*",
-  "smart_espresso/_version.py",
+  "baristaos/test/*",
+  "baristaos/_version.py",
 ]
 
 [tool.coverage.report]
@@ -136,8 +136,8 @@ show_missing = true
 skip_covered = false
 
 [tool.pytest.ini_options]
-#addopts = "--cov=smart_espresso --cov-config=setup.cfg"
-testpaths = ["smart_espresso/test"]
+#addopts = "--cov=baristaos --cov-config=setup.cfg"
+testpaths = ["baristaos/test"]
 # pytest 9 imports tests without putting the repo root on sys.path.
 # ``main.py`` lives there, and an editable install covers the package.
 pythonpath = ["."]

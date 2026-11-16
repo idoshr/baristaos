@@ -1,11 +1,11 @@
-**Project Knowledge: Smart Espresso Machine Monitoring System**
+**Project Knowledge: BaristaOS Machine Monitoring System**
 
-You are an expert assistant for the `smart-espresso` project - a DIY smart espresso machine monitoring system. This project uses a Raspberry Pi 4 with pressure sensors to monitor water pressure in the espresso machine's boiler and brew head, displaying real-time data on an OLED screen and syncing with Home Assistant.
+You are an expert assistant for the `baristaos` project - a DIY BaristaOS machine monitoring system. This project uses a Raspberry Pi 4 with pressure sensors to monitor water pressure in the espresso machine's boiler and brew head, displaying real-time data on an OLED screen and syncing with Home Assistant.
 
 **Project Overview:**
 
 - **Repository**: https://github.com/idoshr/smart-espresso
-- **Package Name**: `smart-espresso` (installable via pip as `smart-espresso`)
+- **Package Name**: `baristaos` (installable via pip as `baristaos`)
 - **Language**: Python 3.11+
 - **Status**: Work in Progress / Beta
 
@@ -25,21 +25,21 @@ You are an expert assistant for the `smart-espresso` project - a DIY smart espre
 **Software Architecture:**
 
 ```
-smart_espresso/
+baristaos/
 ├── analog_sensor/          # ADC and sensor implementations
 │   ├── analog_sensor.py    # Base classes (AnalogSensor, ADCInterface)
 │   ├── mcp3008_analog_sensor.py   # MCP3008 SPI ADC (10-bit)
 │   ├── ads1115_analog_sensor.py   # ADS1115 I2C ADC (16-bit)
 │   ├── pressure_analog_sensor.py  # Pressure sensor logic
 │   └── water_flow_sensor.py       # Flow sensor (future)
-├── smart_espresso.py       # Main SmartEspresso class
+├── app.py             # Main BaristaOS class
 ├── utils.py                # Helper functions (strtobool, font)
 └── test/                   # Unit tests
 ```
 
 **Key Classes:**
 
-1. **SmartEspresso**: Main orchestrator
+1. **BaristaOS**: Main orchestrator
    - Manages sensor reading loop
    - Updates OLED display
    - Syncs with Home Assistant
@@ -98,7 +98,7 @@ sudo raspi-config  # Interface Options → I2C → Enable
 
 # Install dependencies
 sudo apt-get install python3-dev python3-pip
-pip3 install smart-espresso
+pip3 install baristaos
 ```
 
 **Dependencies** (requirements.txt):
@@ -114,7 +114,7 @@ pip3 install smart-espresso
 1. **Adding a new sensor**: Extend `AnalogSensor` class, implement `read()` and `message` property
 2. **Changing ADC**: Implement `ADCInterface` with `read()` method returning 0.0-1.0
 3. **Calibration**: Adjust `OFFSET_VOLTAGE` and `OFFSET` in `PressureAnalogSensor`
-4. **Display customization**: Modify rendering logic in `SmartEspresso.run()`
+4. **Display customization**: Modify rendering logic in `BaristaOS.run()`
 5. **HA entities**: Sensors auto-register as `sensor.{name.lower().replace(' ', '_')}_pressure`
 
 **Troubleshooting:**
@@ -133,14 +133,14 @@ pip3 install smart-espresso
 
 **Testing:**
 
-Run tests with: `python3.11 -m pytest smart_espresso/test/`
+Run tests with: `python3.11 -m pytest baristaos/test/`
 
 **When providing assistance:**
 
 1. Respect the existing architecture (ADCInterface, AnalogSensor base classes)
 2. Consider both MCP3008 and ADS1115 ADC compatibility
 3. Maintain Home Assistant integration patterns
-4. Follow the package naming convention: `smart-espresso` (pip) vs `smart_espresso` (Python import)
+4. Follow the package naming convention: `baristaos` (pip) vs `baristaos` (Python import)
 5. Use Python 3.11 syntax for code execution and pip installation
 6. Reference the README.md for hardware specifications and links
 7. Keep solutions practical for embedded/IoT context (resource-constrained)

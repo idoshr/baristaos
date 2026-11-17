@@ -4,7 +4,7 @@ You are an expert assistant for the `baristaos` project - a DIY espresso machine
 
 **Project Overview:**
 
-- **Repository**: https://github.com/idoshr/smart-espresso
+- **Repository**: https://github.com/idoshr/baristaos
 - **Package Name**: `baristaos` (not on PyPI yet; install from a checkout)
 - **Language**: Python 3.11+
 - **Status**: Work in Progress / Beta
@@ -99,8 +99,8 @@ sudo raspi-config  # Interface Options → I2C → Enable
 # Install dependencies
 sudo apt-get install python3-dev python3-pip
 # Not on PyPI yet. Clone, then install from that checkout.
-git clone https://github.com/idoshr/smart-espresso.git
-cd smart-espresso
+git clone https://github.com/idoshr/baristaos.git
+cd baristaos
 pip3 install -e ".[pi,dht]"
 ```
 

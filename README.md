@@ -4,7 +4,7 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-BSD--3--Clause-green.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-beta-yellow.svg)](https://github.com/idoshr/smart-espresso)
+[![Status](https://img.shields.io/badge/status-beta-yellow.svg)](https://github.com/idoshr/baristaos)
 
 <!-- markdownlint-disable-next-line MD013 MD033 -->
 <p align="center"><img src="docs/img/hero-default-captioned.png" width="320" alt="The dashboard on a phone, running a shot at 26 seconds with its pressure curve drawing live. Demo data, not a real machine."></p>
@@ -74,7 +74,7 @@ Built for your home network. Beta, and still a work in progress.
 > and checked automatically every week by the
 > [Hardware Link Check](.github/workflows/link-check.yml) workflow. If a link
 > above is dead, please update `docs/hardware.yml` and this table, or
-> [open an issue](https://github.com/idoshr/smart-espresso/issues). Run the
+> [open an issue](https://github.com/idoshr/baristaos/issues). Run the
 > checker locally with `python scripts/check_links.py`.
 
 ## Wiring
@@ -139,8 +139,8 @@ can install the core package, with no GPIO or ADC libraries.
 # Enable interfaces
 sudo raspi-config  # Enable I2C and/or SPI
 
-git clone https://github.com/idoshr/smart-espresso.git
-cd smart-espresso
+git clone https://github.com/idoshr/baristaos.git
+cd baristaos
 
 # Pi and DHT drivers. `pip install .` and `pip install -e .` both work.
 pip3 install -e ".[pi,dht]"
@@ -204,8 +204,8 @@ If any step fails before `/opt/smart-espresso` has been moved, run
 
 Keep this terminal open, or note the commit that `echo "$OLD"` prints;
 the rollback needs it. The unit uses `/usr/bin/python3`, not a venv in
-the checkout. The install is editable, so that `pip3` command has to be
-run again from `/opt/baristaos` after the move. Neither unit sets
+the checkout. The install is editable, so it's reinstalled from the new
+folder after the move. Neither unit sets
 `User=`, so systemd runs them as root and shot history moves from
 `/root/.smart_espresso` to `/root/.baristaos` on first start.
 
@@ -363,8 +363,8 @@ and the `[pi]` and `[dht]` extras are for the Pi only: RPi.GPIO and spidev
 do not build on a laptop. Both `pip install .` and `pip install -e .` work.
 
 ```bash
-git clone https://github.com/idoshr/smart-espresso.git
-cd smart-espresso
+git clone https://github.com/idoshr/baristaos.git
+cd baristaos
 python3 -m venv .venv && . .venv/bin/activate
 pip install -e .
 python main.py --sim

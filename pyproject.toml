@@ -63,10 +63,10 @@ test = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/idoshr/smart-espresso"
-Documentation = "https://github.com/idoshr/smart-espresso"
-Repository = "https://github.com/idoshr/smart-espresso"
-Changelog = "https://github.com/idoshr/smart-espresso/releases"
+Homepage = "https://github.com/idoshr/baristaos"
+Documentation = "https://github.com/idoshr/baristaos"
+Repository = "https://github.com/idoshr/baristaos"
+Changelog = "https://github.com/idoshr/baristaos/releases"
 
 [build-system]
 requires = [

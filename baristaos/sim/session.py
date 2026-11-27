@@ -86,7 +86,7 @@ def build_sim_app(
         machine, recorder=recorder, sample_interval=sample_interval
     )
     if history is None:
-        history = ShotHistory(state_path=None)
+        history = ShotHistory(state_path=None, simulated=True)
     if tank is None:
         tank = WaterTank(state_path=None)
     server = StatusServer(port=port, tank=tank, shot_history=history)
@@ -210,7 +210,7 @@ def replay_recording(path, sample_dt=0.005, render_dt=0.1):
                 sample_interval=None,
             ),
         ]
-        history = ShotHistory(state_path=None)
+        history = ShotHistory(state_path=None, simulated=True)
         server = StatusServer(
             port=0,
             tank=WaterTank(state_path=None),

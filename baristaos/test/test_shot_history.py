@@ -60,6 +60,16 @@ class TestShotHistory(unittest.TestCase):
         self.assertIsNone(shot["samples"][-1]["boiler_bar"])
         started = datetime.fromisoformat(shot["started_at"])
         self.assertAlmostEqual(started.timestamp(), 1_700_000_000.0, places=0)
+        self.assertFalse(shot["simulated"])
+
+    def test_a_simulator_log_marks_the_shot(self):
+        history = ShotHistory(
+            state_path=None, simulated=True, now=lambda: 1_700_000_000.0
+        )
+        history.open()
+        history.sample(0.0, 9.0, 1.1, 1.2)
+        shot = history.commit(28.0, 36.0)
+        self.assertTrue(shot["simulated"])
 
     def test_samples_before_open_are_ignored(self):
         history = self.history()

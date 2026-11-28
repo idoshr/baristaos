@@ -912,6 +912,150 @@
     };
   }
 
+  const CARD_THEMES = {
+    light: { bg: "#F2EBE1", card: "#FBF8F3", ink: "#3A2A20", mute: "#735E4D", acc: "#A04620" },
+    dark: { bg: "#1B1511", card: "#271F19", ink: "#F2E8DC", mute: "#B5A08C", acc: "#E58A5C" },
+  };
+
+  function shotShareLabel(canShareFiles) {
+    return canShareFiles ? "Share shot" : "Download image";
+  }
+
+  function shotCardWhen(startedAt) {
+    const when = new Date(startedAt);
+    if (Number.isNaN(when.getTime())) return "";
+    return new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(when);
+  }
+
+  function shotCardFilename(startedAt) {
+    const when = new Date(startedAt);
+    if (Number.isNaN(when.getTime())) return "baristaos-shot.png";
+    const pad = function (value) { return String(value).padStart(2, "0"); };
+    return "baristaos-shot-" + when.getFullYear() + "-" +
+      pad(when.getMonth() + 1) + "-" + pad(when.getDate()) + "-" +
+      pad(when.getHours()) + pad(when.getMinutes()) + ".png";
+  }
+
+  function shotFigure(value, unit) {
+    if (typeof value !== "number" || !isFinite(value)) return null;
+    const tenth = Math.round(value * 10) / 10;
+    const text = Math.abs(tenth - Math.round(tenth)) < 0.05
+      ? String(Math.round(tenth))
+      : tenth.toFixed(1);
+    return text + " " + unit;
+  }
+
+  function finiteSamples(samples, key) {
+    return (samples || []).filter(function (sample) {
+      return typeof sample[key] === "number" && isFinite(sample[key]);
+    });
+  }
+
+  function shotCardLayout(shot, theme, size) {
+    const colors = CARD_THEMES[theme] || CARD_THEMES.light;
+    const width = size && size.width ? size.width : 1080;
+    const height = size && size.height ? size.height : 1440;
+    const shotBody = shot || {};
+    const samples = Array.isArray(shotBody.samples) ? shotBody.samples : [];
+    const flowSamples = finiteSamples(samples, "flow_mls");
+    const headSamples = finiteSamples(samples, "head_bar");
+    const lastT = samples.reduce(function (high, sample) {
+      const t = Number(sample.t);
+      return isFinite(t) ? Math.max(high, t) : high;
+    }, 0);
+    const seconds = shotBody.seconds;
+    const tMax = Math.max(
+      lastT,
+      typeof seconds === "number" && isFinite(seconds) ? seconds : 0,
+      0.001
+    );
+    const headPeak = headSamples.reduce(function (high, sample) {
+      return Math.max(high, sample.head_bar);
+    }, 0);
+    const flowPeak = flowSamples.reduce(function (high, sample) {
+      return Math.max(high, sample.flow_mls);
+    }, 0);
+    const headMax = Math.max(10, Math.ceil(headPeak));
+    const flowMax = Math.max(2, Math.ceil(flowPeak || 0));
+    const pad = Math.round(width * 0.07);
+    const plot = {
+      x: pad,
+      y: Math.round(height * 0.28),
+      w: width - pad * 2,
+      h: Math.round(height * 0.42),
+    };
+    function scale(series, key, yMax) {
+      return series.map(function (sample) {
+        const t = Number(sample.t) || 0;
+        const value = Math.max(0, sample[key]);
+        return {
+          x: Math.round((plot.x + (t / tMax) * plot.w) * 10) / 10,
+          y: Math.round((plot.y + plot.h - (Math.min(value, yMax) / yMax) * plot.h) * 10) / 10,
+        };
+      });
+    }
+    const legend = [{ text: "Head pressure", color: colors.ink }];
+    if (flowSamples.length) legend.push({ text: "Flow", color: colors.acc });
+    legend.forEach(function (item, index) {
+      item.x = pad + index * Math.round(width * 0.42);
+      item.y = plot.y - 28;
+      item.font = "600 32px Manrope, sans-serif";
+    });
+    const figures = [];
+    const timeText = shotFigure(seconds, "s");
+    const volumeText = shotFigure(shotBody.ml, "ml");
+    if (timeText) figures.push({ text: timeText });
+    if (volumeText) figures.push({ text: volumeText });
+    figures.forEach(function (item, index) {
+      item.x = pad + index * Math.round((width - pad * 2) / 2);
+      item.y = plot.y + plot.h + 110;
+      item.font = "700 72px Manrope, sans-serif";
+      item.color = colors.ink;
+    });
+    const footerText = shotBody.simulated === true
+      ? "Demo data, not a real machine."
+      : "";
+    return {
+      width: width,
+      height: height,
+      colors: colors,
+      wordmark: {
+        text: "BaristaOS",
+        x: pad,
+        y: Math.round(height * 0.1),
+        font: "700 64px Manrope, sans-serif",
+        color: colors.ink,
+      },
+      when: {
+        text: shotCardWhen(shotBody.started_at),
+        x: pad,
+        y: Math.round(height * 0.16),
+        font: "600 36px Manrope, sans-serif",
+        color: colors.mute,
+      },
+      legend: legend,
+      plot: plot,
+      axis: { tMax: tMax, headMax: headMax, flowMax: flowMax },
+      head: scale(headSamples, "head_bar", headMax),
+      flow: flowSamples.length ? scale(flowSamples, "flow_mls", flowMax) : [],
+      figures: figures,
+      footer: footerText ? {
+        text: footerText,
+        x: pad,
+        y: height - pad,
+        font: "600 28px Manrope, sans-serif",
+        color: colors.mute,
+      } : null,
+      filename: shotCardFilename(shotBody.started_at),
+      shareText: "A shot on BaristaOS",
+    };
+  }
+
   return {
     pillText: pillText,
     footerText: footerText,
@@ -981,5 +1125,9 @@
     modelRow: modelRow,
     modelButtonName: modelButtonName,
     focusTrapTarget: focusTrapTarget,
+    shotShareLabel: shotShareLabel,
+    shotCardWhen: shotCardWhen,
+    shotCardFilename: shotCardFilename,
+    shotCardLayout: shotCardLayout,
   };
 });

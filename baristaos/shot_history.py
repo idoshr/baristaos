@@ -231,6 +231,7 @@ class ShotHistory:
         sample_interval: float = SAMPLE_INTERVAL,
         max_samples: int = MAX_SAMPLES,
         now: Optional[Callable[[], float]] = None,
+        simulated: bool = False,
     ):
         """
         Initialize the log and restore whatever was saved last time.
@@ -258,6 +259,7 @@ class ShotHistory:
         self.sample_interval = sample_interval
         self.max_samples = max_samples
         self._now = now or _wall_time
+        self.simulated = bool(simulated)
         self._monotonic = time.monotonic
         wall = self._now()
         self._clock_wall = wall
@@ -347,6 +349,7 @@ class ShotHistory:
                 )
                 return None
             shot = active.finish(self._next_id, seconds_value, ml_value)
+            shot["simulated"] = self.simulated
             self._next_id += 1
             self._shots.append(shot)
             if len(self._shots) > self.max_shots:
@@ -634,6 +637,7 @@ def _shot_from_disk(raw) -> dict:
         "peak_flow_mls": _peak(raw, "peak_flow_mls", "flow_mls", samples),
         "samples": samples,
         "clock_synced": raw.get("clock_synced", True) is True,
+        "simulated": raw.get("simulated") is True,
     }
 
 
@@ -660,6 +664,7 @@ def _public_shot(shot: dict, with_samples: bool) -> dict:
         "peak_boiler_bar": shot["peak_boiler_bar"],
         "peak_flow_mls": shot["peak_flow_mls"],
         "clock_synced": shot.get("clock_synced", True) is True,
+        "simulated": shot.get("simulated") is True,
     }
     if with_samples:
         summary["samples"] = [dict(point) for point in shot["samples"]]

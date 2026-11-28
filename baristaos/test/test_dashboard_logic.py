@@ -1533,3 +1533,88 @@ class TestMachineProfileUi:
         assert "bottom:" not in mark
         assert "closeSwitchDialog" in page
         assert "switchOpener" in page
+
+
+class TestShotCard:
+    def _shot(self, **extra):
+        shot = {
+            "started_at": "2026-11-16T08:42:00",
+            "seconds": 28,
+            "ml": 36,
+            "samples": [
+                {"t": 0, "head_bar": 0.4, "flow_mls": 0},
+                {"t": 28, "head_bar": 9.0, "flow_mls": 1.4},
+            ],
+        }
+        shot.update(extra)
+        return shot
+
+    def _layout(self, shot, theme="light"):
+        return call(
+            "logic.shotCardLayout(%s, %s, {width:1080, height:1440})"
+            % (json.dumps(shot), json.dumps(theme))
+        )
+
+    def test_share_label_and_filename(self):
+        assert call("logic.shotShareLabel(true)") == "Share shot"
+        assert call("logic.shotShareLabel(false)") == "Download image"
+        iso = call(
+            "(function () {"
+            " const when = new Date(2026, 10, 16, 8, 42);"
+            " return when.toISOString();"
+            "})()"
+        )
+        assert (
+            call("logic.shotCardFilename(%s)" % json.dumps(iso))
+            == "baristaos-shot-2026-11-16-0842.png"
+        )
+
+    def test_footer_is_only_on_a_simulated_shot(self):
+        sim = self._layout(self._shot(simulated=True))
+        real = self._layout(self._shot())
+        assert sim["footer"]["text"] == "Demo data, not a real machine."
+        assert real["footer"] is None
+        assert sim["shareText"] == "A shot on BaristaOS"
+        assert sim["wordmark"]["text"] == "BaristaOS"
+        assert "pull" not in json.dumps(sim).lower()
+
+    def test_missing_flow_volume_and_extreme_lengths(self):
+        no_flow = self._layout(
+            self._shot(
+                samples=[
+                    {"t": 0, "head_bar": 1.0, "flow_mls": None},
+                    {"t": 20, "head_bar": 8.0, "flow_mls": None},
+                ]
+            )
+        )
+        assert [item["text"] for item in no_flow["legend"]] == ["Head pressure"]
+        assert no_flow["flow"] == []
+        no_volume = self._layout(self._shot(ml=None))
+        assert [item["text"] for item in no_volume["figures"]] == ["28 s"]
+        no_time = self._layout(self._shot(seconds=None))
+        assert [item["text"] for item in no_time["figures"]] == ["36 ml"]
+        short = self._layout(
+            self._shot(
+                seconds=0.4,
+                samples=[{"t": 0.4, "head_bar": 2.0, "flow_mls": 0.2}],
+            )
+        )
+        long = self._layout(
+            self._shot(
+                seconds=120,
+                samples=[
+                    {"t": 0, "head_bar": 1, "flow_mls": 0},
+                    {"t": 120, "head_bar": 15, "flow_mls": 2},
+                ],
+            )
+        )
+        assert short["figures"][0]["text"] == "0.4 s"
+        assert (
+            abs(short["head"][-1]["x"] - (short["plot"]["x"] + short["plot"]["w"])) < 1
+        )
+        assert abs(long["head"][-1]["x"] - (long["plot"]["x"] + long["plot"]["w"])) < 1
+        assert long["axis"]["headMax"] >= 15
+        assert short["axis"]["headMax"] >= 10
+        dark = self._layout(self._shot(), "dark")
+        assert dark["colors"]["bg"] == "#1B1511"
+        assert self._layout(self._shot())["colors"]["bg"] == "#F2EBE1"

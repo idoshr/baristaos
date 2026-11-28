@@ -323,7 +323,7 @@ def build_from_env(environ=None, sim=None, recorder=None):
                         capacity_ml=_profile_capacity(profiles),
                         state_path=tank_path,
                     ),
-                    shot_history=ShotHistory(state_path=shot_path),
+                    shot_history=ShotHistory(state_path=shot_path, simulated=True),
                     profiles=profiles,
                 )
         else:
@@ -426,6 +426,7 @@ def main(argv=None):
                 max_shots=int(
                     os.environ.get("SHOT_HISTORY_MAX", ShotHistory.MAX_SHOTS)
                 ),
+                simulated=sim,
             )
             classifier = MachineStateClassifier(shot_history=history)
             profiles.apply(tank)

@@ -1653,6 +1653,18 @@
   }
 
   .history-detail { padding: 2px 4px 4px; }
+  .shot-share {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    margin: 8px 0 12px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1.5px solid var(--ink);
+    background: transparent;
+    color: var(--ink);
+    font: 700 15px var(--body);
+  }
 
   .history-meta {
     font-size: 13px;
@@ -2744,6 +2756,126 @@ function paintShot(detail, shot) {
     charts = '<div class="history-meta">This shot was saved without a curve.</div>';
   }
   detail.innerHTML = `<div class="history-meta">${bits.map(escapeHtml).join(' · ')}</div>${charts}`;
+  const share = document.createElement('button');
+  share.type = 'button';
+  share.className = 'shot-share';
+  share.textContent = DashboardLogic.shotShareLabel(canShareShotFile());
+  share.addEventListener('click', () => shareShotCard(shot));
+  detail.prepend(share);
+}
+
+function canShareShotFile() {
+  if (!navigator.canShare || typeof File === 'undefined') return false;
+  try {
+    const file = new File(['x'], 'baristaos-shot.png', { type: 'image/png' });
+    return navigator.canShare({ files: [file] });
+  } catch (err) {
+    return false;
+  }
+}
+
+function drawShotCard(canvas, layout) {
+  const ctx = canvas.getContext('2d');
+  canvas.width = layout.width;
+  canvas.height = layout.height;
+  const colors = layout.colors;
+  ctx.fillStyle = colors.bg;
+  ctx.fillRect(0, 0, layout.width, layout.height);
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = layout.wordmark.color;
+  ctx.font = layout.wordmark.font;
+  ctx.fillText(layout.wordmark.text, layout.wordmark.x, layout.wordmark.y);
+  if (layout.when && layout.when.text) {
+    ctx.fillStyle = layout.when.color;
+    ctx.font = layout.when.font;
+    ctx.fillText(layout.when.text, layout.when.x, layout.when.y);
+  }
+  layout.legend.forEach(item => {
+    ctx.fillStyle = item.color;
+    ctx.beginPath();
+    ctx.arc(item.x, item.y - 8, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.font = item.font;
+    ctx.fillText(item.text, item.x + 20, item.y);
+  });
+  const plot = layout.plot;
+  ctx.strokeStyle = colors.mute;
+  ctx.globalAlpha = 0.35;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(plot.x, plot.y + plot.h);
+  ctx.lineTo(plot.x + plot.w, plot.y + plot.h);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  const stroke = (points, color) => {
+    if (!points || !points.length) return;
+    ctx.fillStyle = color;
+    ctx.strokeStyle = color;
+    if (points.length === 1) {
+      ctx.beginPath();
+      ctx.arc(points[0].x, points[0].y, 7, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
+    ctx.lineWidth = 6;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    points.forEach((point, index) => {
+      if (index) ctx.lineTo(point.x, point.y);
+      else ctx.moveTo(point.x, point.y);
+    });
+    ctx.stroke();
+  };
+  stroke(layout.head, colors.ink);
+  stroke(layout.flow, colors.acc);
+  layout.figures.forEach(figure => {
+    ctx.fillStyle = figure.color;
+    ctx.font = figure.font;
+    ctx.fillText(figure.text, figure.x, figure.y);
+  });
+  if (layout.footer && layout.footer.text) {
+    ctx.fillStyle = layout.footer.color;
+    ctx.font = layout.footer.font;
+    ctx.fillText(layout.footer.text, layout.footer.x, layout.footer.y);
+  }
+}
+
+async function shareShotCard(shot) {
+  const root = document.documentElement;
+  const dark = root.dataset.theme === 'dark' || (
+    root.dataset.theme !== 'light' &&
+    window.matchMedia('(prefers-color-scheme: dark)').matches
+  );
+  const layout = DashboardLogic.shotCardLayout(shot, dark ? 'dark' : 'light', {
+    width: 1080,
+    height: 1440,
+  });
+  const canvas = document.createElement('canvas');
+  if (document.fonts && document.fonts.ready) {
+    try { await document.fonts.ready; } catch (err) { /* draw with the fallback face */ }
+  }
+  drawShotCard(canvas, layout);
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+  if (!blob) return;
+  const file = new File([blob], layout.filename, { type: 'image/png' });
+  const payload = { files: [file], text: layout.shareText };
+  if (navigator.canShare && navigator.canShare(payload)) {
+    try {
+      await navigator.share(payload);
+      return;
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = layout.filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
 // ---- machine profile -----------------------------------------------------

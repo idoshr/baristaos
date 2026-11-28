@@ -654,6 +654,12 @@
       min-height: 0;
       overflow: hidden;
     }
+    #pulls-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
     /* Four rows, spread to the card bottom. The link opens the rest.
        The rows can shrink; a 4th row that still will not fit is hidden. */
     #recent-tiles {
@@ -1653,17 +1659,20 @@
   }
 
   .history-detail { padding: 2px 4px 4px; }
+  .head-actions { display: flex; align-items: center; gap: 8px; }
   .shot-share {
-    display: block;
-    width: 100%;
-    min-height: 44px;
-    margin: 8px 0 12px;
-    padding: 0 16px;
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    margin: 0;
+    padding: 0 10px;
     border-radius: 999px;
     border: 1.5px solid var(--ink);
     background: transparent;
     color: var(--ink);
-    font: 700 15px var(--body);
+    font: 700 12.5px var(--body);
+    white-space: nowrap;
+    cursor: pointer;
   }
 
   .history-meta {
@@ -2087,13 +2096,18 @@
   <div class="card" id="pulls-card" hidden>
     <div class="card-head">
       <span class="title">Recent shots</span>
-      <button type="button" class="all-shots" id="all-shots" aria-expanded="false" hidden>All 0 shots ›</button>
+      <span class="head-actions">
+        <button type="button" class="shot-share" id="shot-share" hidden>Download image</button>
+        <button type="button" class="all-shots" id="all-shots" aria-expanded="false" hidden>All 0 shots ›</button>
+      </span>
     </div>
+    <div id="pulls-body">
     <div class="recent-tiles" id="recent-tiles" aria-label="Recent shots"></div>
     <div id="history-card" hidden>
       <div class="history-list" id="history-list"></div>
     </div>
     <div class="history-detail" id="shot-sheet" hidden></div>
+    </div>
   </div>
   </div>
 </div>
@@ -2468,6 +2482,7 @@ function renderRecent(block) {
     historyShots = [];
     selectedShotId = null;
     document.getElementById('shot-sheet').hidden = true;
+    bindShotShare(null);
     document.getElementById('history-list').innerHTML = '';
     return;
   }
@@ -2477,6 +2492,7 @@ function renderRecent(block) {
   if (!recent.some(shot => shot.id === selectedShotId)) {
     selectedShotId = null;
     document.getElementById('shot-sheet').hidden = true;
+    bindShotShare(null);
   }
   paintHistoryList();
   if (selectedShotId != null) showShot(selectedShotId, false);
@@ -2721,8 +2737,16 @@ function chartBlock(title, samples, key, klass, yMax, unit, guide) {
     <div class="axis"><span>0 s</span><span>${end}</span></div>`;
 }
 
+function plottedSamples(shot) {
+  const seconds = shot && typeof shot.seconds === "number" ? shot.seconds : null;
+  return DashboardLogic.clipShotSamples(
+    shot && Array.isArray(shot.samples) ? shot.samples : [],
+    seconds
+  );
+}
+
 function paintShot(detail, shot) {
-  const samples = Array.isArray(shot.samples) ? shot.samples : [];
+  const samples = plottedSamples(shot);
   const seconds = Number(shot.seconds);
   const ml = Number(shot.ml);
   const bits = [
@@ -2756,12 +2780,16 @@ function paintShot(detail, shot) {
     charts = '<div class="history-meta">This shot was saved without a curve.</div>';
   }
   detail.innerHTML = `<div class="history-meta">${bits.map(escapeHtml).join(' · ')}</div>${charts}`;
-  const share = document.createElement('button');
-  share.type = 'button';
-  share.className = 'shot-share';
+  bindShotShare(shot);
+}
+
+function bindShotShare(shot) {
+  const share = document.getElementById('shot-share');
+  if (!share) return;
+  share.hidden = !shot;
+  if (!shot) return;
   share.textContent = DashboardLogic.shotShareLabel(canShareShotFile());
-  share.addEventListener('click', () => shareShotCard(shot));
-  detail.prepend(share);
+  share.onclick = () => shareShotCard(shot);
 }
 
 function canShareShotFile() {

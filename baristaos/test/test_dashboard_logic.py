@@ -1618,3 +1618,51 @@ class TestShotCard:
         dark = self._layout(self._shot(), "dark")
         assert dark["colors"]["bg"] == "#1B1511"
         assert self._layout(self._shot())["colors"]["bg"] == "#F2EBE1"
+
+    def test_samples_past_seconds_are_excluded(self):
+        samples = [
+            {"t": 0, "head_bar": 2.0, "flow_mls": 0.4},
+            {"t": 26, "head_bar": 9.0, "flow_mls": 1.5},
+            {"t": 26.5, "head_bar": 0, "flow_mls": 1.53},
+        ]
+        kept = call("logic.clipShotSamples(%s, 26)" % json.dumps(samples))
+        assert [sample["t"] for sample in kept] == [0, 26]
+        layout = self._layout(self._shot(seconds=26, samples=samples))
+        assert layout["axis"]["tMax"] == 26
+        assert len(layout["head"]) == 2
+        assert len(layout["flow"]) == 2
+        assert (
+            abs(layout["head"][-1]["x"] - (layout["plot"]["x"] + layout["plot"]["w"]))
+            < 1
+        )
+        baseline = layout["plot"]["y"] + layout["plot"]["h"]
+        assert layout["head"][-1]["y"] < baseline - 20
+
+    def test_trailing_zero_head_is_dropped_when_seconds_is_missing(self):
+        samples = [
+            {"t": 0, "head_bar": 0, "flow_mls": 0},
+            {"t": 10, "head_bar": 8.0, "flow_mls": 1.2},
+            {"t": 10.5, "head_bar": 0, "flow_mls": 1.53},
+        ]
+        kept = call("logic.clipShotSamples(%s, null)" % json.dumps(samples))
+        assert [sample["t"] for sample in kept] == [0, 10]
+        layout = self._layout(self._shot(seconds=None, samples=samples))
+        assert layout["axis"]["tMax"] == 10
+        assert len(layout["head"]) == 2
+        assert len(layout["flow"]) == 2
+
+    def test_a_shot_with_no_trailing_tail_is_unchanged(self):
+        samples = [
+            {"t": 0, "head_bar": 0.4, "flow_mls": 0},
+            {"t": 28, "head_bar": 9.0, "flow_mls": 1.4},
+        ]
+        kept = call("logic.clipShotSamples(%s, 28)" % json.dumps(samples))
+        assert kept == samples
+        layout = self._layout(self._shot(seconds=28, samples=samples))
+        assert layout["axis"]["tMax"] == 28
+        assert len(layout["head"]) == 2
+        assert len(layout["flow"]) == 2
+        assert (
+            abs(layout["head"][-1]["x"] - (layout["plot"]["x"] + layout["plot"]["w"]))
+            < 1
+        )

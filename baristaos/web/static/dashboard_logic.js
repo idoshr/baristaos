@@ -956,24 +956,41 @@
     });
   }
 
+  // The log keeps a beat after the pour: head is already 0 while flow is
+  // still moving. The charts stop at the shot's duration. With no duration,
+  // only a trailing head of 0 is left off, so a real zero in the middle stays.
+  function clipShotSamples(samples, seconds) {
+    const list = Array.isArray(samples) ? samples.slice() : [];
+    const hasSeconds = typeof seconds === "number" && isFinite(seconds);
+    if (hasSeconds) {
+      return list.filter(function (sample) {
+        const t = Number(sample.t);
+        return isFinite(t) && t <= seconds + 1e-9;
+      });
+    }
+    const clipped = list.slice();
+    while (clipped.length) {
+      const head = clipped[clipped.length - 1].head_bar;
+      if (typeof head === "number" && isFinite(head) && head === 0) clipped.pop();
+      else break;
+    }
+    return clipped;
+  }
+
   function shotCardLayout(shot, theme, size) {
     const colors = CARD_THEMES[theme] || CARD_THEMES.light;
     const width = size && size.width ? size.width : 1080;
     const height = size && size.height ? size.height : 1440;
     const shotBody = shot || {};
-    const samples = Array.isArray(shotBody.samples) ? shotBody.samples : [];
+    const seconds = shotBody.seconds;
+    const samples = clipShotSamples(shotBody.samples, seconds);
     const flowSamples = finiteSamples(samples, "flow_mls");
     const headSamples = finiteSamples(samples, "head_bar");
     const lastT = samples.reduce(function (high, sample) {
       const t = Number(sample.t);
       return isFinite(t) ? Math.max(high, t) : high;
     }, 0);
-    const seconds = shotBody.seconds;
-    const tMax = Math.max(
-      lastT,
-      typeof seconds === "number" && isFinite(seconds) ? seconds : 0,
-      0.001
-    );
+    const tMax = Math.max(lastT, 0.001);
     const headPeak = headSamples.reduce(function (high, sample) {
       return Math.max(high, sample.head_bar);
     }, 0);
@@ -1129,5 +1146,6 @@
     shotCardWhen: shotCardWhen,
     shotCardFilename: shotCardFilename,
     shotCardLayout: shotCardLayout,
+    clipShotSamples: clipShotSamples,
   };
 });
